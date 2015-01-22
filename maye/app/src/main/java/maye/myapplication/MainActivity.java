@@ -11,10 +11,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.RadioButton;
 import android.widget.RelativeLayout;
+import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.ToggleButton;
@@ -61,7 +64,10 @@ public class MainActivity extends Activity {
     RadioButton radioButton = null;
     CheckBox checkBox = null;
     Switch aSwitch = null;
-    ToggleButton toggleButton=null;
+    ToggleButton toggleButton = null;
+    ImageButton imageButton = null;
+    ProgressBar progressBar = null;
+    SeekBar seekBar = null;
     View generalView =  null;
 
     @Override
@@ -144,6 +150,7 @@ public class MainActivity extends Activity {
         RelativeLayout.LayoutParams rlp;
         LinearLayout.LayoutParams llp;
         int text_style = 0;
+        int style = -1;
         String tipo = null;
         try {
             tipo = json.getString("class");
@@ -155,6 +162,7 @@ public class MainActivity extends Activity {
 
 
         Iterator<String> iter = json.keys();
+
         if (tipo.equals(type.XML_RELATIVE_LAYOUT)) {
             index_padre = cont_relativelayout;
             cont_relativelayout++;
@@ -206,7 +214,21 @@ public class MainActivity extends Activity {
             this_parent = toggleButton;
             type_class = type.TOGGLE_BUTTON;
         }
-
+        if (tipo.equals(type.XML_IMAGE_BUTTON)){
+            imageButton = new ImageButton(baseContecxt);
+            this_parent = imageButton;
+            type_class=type.IMAGE_BUTTON;
+        }
+        if(tipo.equals(type.XML_PROGRESSBAR)){
+            progressBar = new ProgressBar(baseContecxt);
+            this_parent = progressBar;
+            type_class = type.PROGRESSBAR;
+        }
+        if(tipo.equals(type.XML_SEEKBAR)){
+            seekBar = new SeekBar(baseContecxt);
+            this_parent = seekBar;
+            type_class = type.SEEKBAR;
+        }
         while (iter.hasNext()) {
             key = iter.next();
             try {
@@ -354,6 +376,22 @@ public class MainActivity extends Activity {
                 if (key.equals("src")){
                     aq.id(imageview).image(server+"img/"+value.toString().replace("@drawable/",""),false,false,0,R.drawable.place);
                 }
+                /* ProgressBar */
+                if(key.equals("style") && type_class == type.PROGRESSBAR) {
+                    if (value.equals("?android:attr/progressBarStyleLarge")){
+                        //style = android.R.attr.progressBarStyleLarge;
+                        progressBar =  new ProgressBar(baseContecxt, null,android.R.attr.progressBarStyleLarge);
+                    }
+                    if (value.equals("?android:attr/progressBarStyleHorizontal")){
+                        //style = android.R.attr.progressBarStyleHorizontal;
+                        progressBar =  new ProgressBar(baseContecxt, null,android.R.attr.progressBarStyleHorizontal);
+                    }
+                    if (value.equals("?android:attr/progressBarStyleSmall")){
+                        //style = android.R.attr.progressBarStyleSmall;
+                        progressBar =  new ProgressBar(baseContecxt, null,android.R.attr.progressBarStyleSmall);
+                    }
+
+                }
 
                 //Log.e("key--->", key);
                 if (key.equals("children")) {
@@ -442,7 +480,6 @@ public class MainActivity extends Activity {
                 generalView = imageview;
                 Log.e("added", "ImageView");
                 break;
-
             case type.RADIOBUTTON:
                 generalView = radioButton;
                 Log.e("added", "RadioButton");
@@ -458,6 +495,19 @@ public class MainActivity extends Activity {
             case type.TOGGLE_BUTTON:
                 generalView = toggleButton;
                 Log.e("added", "Swich");
+                break;
+            case type.IMAGE_BUTTON:
+                generalView = imageButton;
+                Log.e("added","ImageButton");
+                break;
+            case type.PROGRESSBAR:
+
+                generalView = progressBar;
+                Log.e("added","ProgressBar");
+                break;
+            case type.SEEKBAR:
+                generalView = seekBar;
+                Log.e("added","SeekBar");
                 break;
         }
 
