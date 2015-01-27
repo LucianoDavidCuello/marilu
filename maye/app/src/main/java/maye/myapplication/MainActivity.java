@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -35,6 +36,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Enumeration;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -50,9 +53,11 @@ public class MainActivity extends Activity {
     int cont_relativelayout = 0;
     String last_change = "";
     int cont_linearlayout = 0;
-
+    Hashtable<String,Integer> ids = new Hashtable<>();
+    Integer ids_count = 10000;
     Timer timer;
-    String server="http://192.168.1.175/maye/";
+    String server="http://tabacan.com/mayecode/projects/";
+
     MyTimerTask myTimerTask;
 
 
@@ -92,11 +97,18 @@ public class MainActivity extends Activity {
         //otherwise, IllegalStateException of
         //"TimerTask is scheduled already"
         //will be thrown
-        timer = new Timer();
-        myTimerTask = new MyTimerTask();
+        findViewById(R.id.buttonLoadPreview).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                server = server + ((EditText)findViewById(R.id.programId)).getText()+"/";
+                findViewById(R.id.login).setVisibility(View.GONE);
+                findViewById(R.id.lienzo).setVisibility(View.VISIBLE);
+                timer = new Timer();
+                myTimerTask = new MyTimerTask();
+                timer.schedule(myTimerTask, 0, 2500);
+            }
+        });
 
-
-            timer.schedule(myTimerTask, 0, 2500);
 
 
     }
@@ -122,6 +134,7 @@ public class MainActivity extends Activity {
                             try {
                                 Log.e("recive", object.toString());
                                 lienzo.removeAllViews();
+                                searchIds(object);
                                 parse(0, object, lienzo);
                             } catch (Exception e) {
                                 e.printStackTrace();
@@ -134,7 +147,41 @@ public class MainActivity extends Activity {
     }
 
 
+    private  void searchIds(JSONObject json){
+        Iterator<String> iter = json.keys();
+        String key;
+        while (iter.hasNext()) {
+            key = iter.next();
+            try {
+                Object value = json.get(key);
+                if (key.equals("id")) {
+                    ids_count++;
+                    Log.e("--------------", "[" + value.toString() + "]:" + String.valueOf(ids_count));
+                    ids.put(value.toString(), ids_count);
 
+                }
+                if (key.equals("children")) {
+                    if (value instanceof JSONArray) {
+                        for (int tt = 0; tt < json.getJSONArray("children").length(); tt++) {
+                            try {
+                                searchIds(json.getJSONArray("children").getJSONObject(tt));
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    } else {
+                        try {
+                            searchIds(json.getJSONObject("children"));
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            } catch (JSONException e) {
+                Log.e("Json Error:", e.getMessage());
+            }
+        }
+    }
 
 
     private void parse(int type_father, JSONObject json, ViewGroup parent) {
@@ -142,15 +189,20 @@ public class MainActivity extends Activity {
         View this_parent = null;
         int index_padre = 0;
         int type_class = -1;
+        int view_id = 0;
         int layout_width = ViewGroup.LayoutParams.MATCH_PARENT;
-        int layout_height = ViewGroup.LayoutParams.WRAP_CONTENT;
+        int layout_height = ViewGroup.LayoutParams.MATCH_PARENT;
         int margin_top = 0, margin_bottom = 0, margin_left = 0, margin_right = 0;
         int gravity = Gravity.NO_GRAVITY;
         ArrayList<Integer> layoutParams = new ArrayList<Integer>();
+
+        Hashtable<Integer,Integer> layoutParams2 = new Hashtable<>();
+
         RelativeLayout.LayoutParams rlp;
         LinearLayout.LayoutParams llp;
         int text_style = 0;
         int style = -1;
+        int this_id = -1;
         String tipo = null;
         try {
             tipo = json.getString("class");
@@ -233,6 +285,9 @@ public class MainActivity extends Activity {
             key = iter.next();
             try {
                 Object value = json.get(key);
+                if(key.equals("id")){
+                    this_id = ids.get(value.toString());
+                }
                 /* Layour w,h*/
                 if (key.equals("layout_width")) {
                     if (value.equals("fill_parent")) {
@@ -247,7 +302,6 @@ public class MainActivity extends Activity {
                     if (value.toString().contains("dp")) {
                         layout_width = m.dp(Integer.valueOf(value.toString().split("dp")[0]));
                     }
-
                 }
                 if (key.equals("layout_height")) {
                     if (value.equals("fill_parent")) {
@@ -307,11 +361,35 @@ public class MainActivity extends Activity {
                     layoutParams.add(RelativeLayout.ALIGN_PARENT_BOTTOM);
                 }
                 if (key.equals("layout_centerVertical") && value.toString().toLowerCase().equals("true")) {
+                    Log.e("centrado", "vertical");
                     layoutParams.add(RelativeLayout.CENTER_VERTICAL);
                 }
                 if (key.equals("layout_centerHorizontal") && value.toString().toLowerCase().equals("true")) {
+                    Log.e("centrado", "horizontal");
                     layoutParams.add(RelativeLayout.CENTER_HORIZONTAL);
                 }
+
+                /* Align */
+                if (key.equals("layout_below")) {
+                    layoutParams2.put(RelativeLayout.BELOW, ids.get(value.toString()));
+                }
+                if (key.equals("layout_above")) {
+                    layoutParams2.put(RelativeLayout.ABOVE, ids.get(value.toString()));
+                }
+                if (key.equals("layout_alignTop")) {
+                    layoutParams2.put(RelativeLayout.ALIGN_TOP, ids.get(value.toString()));
+                }
+                if (key.equals("layout_toRightOf")) {
+                    layoutParams2.put(RelativeLayout.RIGHT_OF, ids.get(value.toString()));
+                }
+                if (key.equals("layout_toLeftOf")) {
+                    layoutParams2.put(RelativeLayout.LEFT_OF, ids.get(value.toString()));
+                }
+                if (key.equals("layout_toEndOf")) {
+                    layoutParams2.put(RelativeLayout.END_OF, ids.get(value.toString()));
+                }
+
+
                 if (key.equals("layout_gravity") && value.toString().toLowerCase().equals("center_horizontal")) {
                     gravity = Gravity.CENTER_HORIZONTAL;
                 }
@@ -446,8 +524,15 @@ public class MainActivity extends Activity {
         //}
 
         for (int t : layoutParams) {
+            Log.e("---- rela ----", String.valueOf(t));
             rlp.addRule(t);
         }
+
+        for (int t : layoutParams2.keySet()) {
+            Log.e("--- rela for----", String.valueOf(t)+"-"+String.valueOf(layoutParams2.get(t)));
+            rlp.addRule(t, layoutParams2.get(t));
+        }
+
         generalView = null;
         switch (type_class) {
             case type.RELATIVE_LAYOUT:
@@ -512,8 +597,10 @@ public class MainActivity extends Activity {
         }
 
         if(generalView!=null){
+            generalView.setLayoutParams(rlp);
+            if (this_id!=-1) generalView.setId(this_id);
             if (type_father ==  type.RELATIVE_LAYOUT) {
-                parent.addView(generalView, rlp);
+                parent.addView(generalView);
             }
             if (type_father == type.LINEAR_LAYOUT) {
                 llp.gravity = gravity;
