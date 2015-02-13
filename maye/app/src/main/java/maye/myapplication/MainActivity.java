@@ -62,7 +62,7 @@ public class MainActivity extends Activity {
 
 
     method m;
-
+    Boolean waiting=false;
     TextView textView = null;
     Button button = null;
     ImageView imageview = null;
@@ -116,16 +116,20 @@ public class MainActivity extends Activity {
     class MyTimerTask extends TimerTask {
         @Override
         public void run() {
-            buscar();
+
+            if(!waiting){buscar();}
         }
 
     }
 
     public void buscar() {
         aq.ajaxCancel();
+        waiting=true;
+
         aq.ajax(server+"new.json", String.class, new AjaxCallback<String>() {
             @Override
             public void callback(String url, String object, AjaxStatus status) {
+                Log.e("status",status.getMessage());
                 if (!object.equals(last_change)) {
                     last_change = object;
                     aq.ajax(server+"data.json", JSONObject.class, new AjaxCallback<JSONObject>() {
@@ -136,11 +140,14 @@ public class MainActivity extends Activity {
                                 lienzo.removeAllViews();
                                 searchIds(object);
                                 parse(0, object, lienzo);
+                                waiting=false;
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
                         }
                     });
+                }else{
+                    waiting=false;
                 }
             }
         });
